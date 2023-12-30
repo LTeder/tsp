@@ -1,12 +1,15 @@
 [package]
 name = "tsp"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Logan Teder"]
 description = "Genetic program to solve the travelling salesperson problem"
 
 [dependencies]
-clap = { version = "4.3.11", features = ["derive"] }
-rand = "0.8.5"
+clap = { version = "4.3", features = ["derive"] }
+piston_window = "0.131"
+plotters = "0.3"
+plotters-piston = "0.3"
+rand = "0.8"
 
 [profile.dev]
 opt-level = 2

@@ -3,56 +3,74 @@ extern crate clap;
 mod tsp;
 mod helper;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use tsp::Simulation;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    #[arg(short = 'f', long)]
-    points_filename: String,
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
 
-    #[arg(short, long, default_value_t = 100)]
-    iterations: usize,
+#[derive(Subcommand)]
+enum Commands {
+    TSP {
+        #[arg(short = 'f', long)]
+        points_filename: String,
 
-    #[arg(short, long, default_value_t = 50)]
-    population_size: usize,
+        #[arg(short, long, default_value_t = 100)]
+        iterations: usize,
 
-    #[arg(short, long, default_value_t = 0.9)]
-    crossover_rate: f64,
+        #[arg(short, long, default_value_t = 50)]
+        population_size: usize,
 
-    #[arg(short, long, default_value_t = 0.05)]
-    mutation_rate: f64,
+        #[arg(short, long, default_value_t = 0.9)]
+        crossover_rate: f64,
 
-    #[arg(short, long, default_value_t = 0.5)]
-    survival_rate: f64
+        #[arg(short, long, default_value_t = 0.05)]
+        mutation_rate: f64,
+
+        #[arg(short, long, default_value_t = 0.5)]
+        survival_rate: f64
+    },
+    Render {
+        #[arg(short, long)]
+        input: String,
+    }
 }
 
 fn main() {
     let args = Args::parse();
-    let points_filename = args.points_filename;
-    let iterations = args.iterations;
-    let population_size = args.population_size;
-    let crossover_rate = args.crossover_rate;
-    let mutation_rate = args.mutation_rate;
-    let survival_rate = args.survival_rate;
+    match &args.command {
+        Some(Commands::TSP{points_filename, iterations, population_size,
+                           crossover_rate, mutation_rate, survival_rate}) => {
 
-    let mut points_vec = Vec::new();
-    match helper::read_points_from_file(&points_filename) {
-        Ok(points) => {
-            points_vec = points
+            let mut cities = Vec::new();
+            match helper::read_points_from_file(&points_filename) {
+                Ok(points) => {
+                    cities = points
+                }
+                Err(e) => eprintln!("Error reading file: {}", e),
+            }
+        
+            // Run simulation
+            let mut sim = Simulation::new(
+                cities,
+                *population_size,
+                *iterations,
+                *crossover_rate,
+                *mutation_rate,
+                *survival_rate,
+            );
+            sim.run();
         }
-        Err(e) => eprintln!("Error reading file: {}", e),
+        Some(Commands::Render{input}) => {
+            // Handle render command
+            const FPS: u32 = 20;
+        }
+        None => {
+            // Handle no command provided
+        }
     }
-
-    // Run simulation
-    let mut sim = Simulation::new(
-        points_vec,
-        iterations,
-        population_size,
-        crossover_rate,
-        mutation_rate,
-        survival_rate
-    );
-    sim.run();
 }

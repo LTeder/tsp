@@ -1,6 +1,8 @@
 extern crate rand;
 
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::Write;
 
 use self::rand::{Rng, thread_rng};
 use self::rand::seq::SliceRandom;
@@ -125,10 +127,11 @@ impl Path {
 pub struct Simulation {
      city_list: Vec<City>,
      population: Vec<Path>,
+     best_paths: Vec<Path>,
      iterations: usize,
      crossover_rate: f64,
      mutation_rate: f64,
-     survival_rate: f64
+     survival_rate: f64,
  }
 
 impl Simulation {
@@ -137,13 +140,15 @@ impl Simulation {
                iterations: usize,
                crossover_rate: f64,
                mutation_rate: f64,
-               survival_rate: f64) -> Self {
+               survival_rate: f64,) -> Self {
 
         let population = Self::initial_population(&city_list, population_size);
+        let best_paths = Vec::with_capacity(population_size);
 
         Simulation {
             city_list,
             population,
+            best_paths,
             iterations,
             crossover_rate,
             mutation_rate,
@@ -175,6 +180,7 @@ impl Simulation {
             if challenger.fitness > fittest.fitness {
                 fittest = challenger;
             }
+            self.best_paths.push(fittest.clone());
         }
         println!("Champion:\n{:?}", fittest);
     }
@@ -228,5 +234,19 @@ impl Simulation {
             }
         }
         self.population = next_generation;
+    }
+
+    fn write_best_path_csv(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let mut file = File::create(file_path)?;
+        for (iteration, path) in self.best_paths.iter().enumerate() {
+            let path_str = path
+                .order
+                .iter()
+                .map(|&index| index.to_string())
+                .collect::<Vec<String>>()
+                .join(",");
+            writeln!(file, "{},{}", iteration, path_str)?;
+        }
+        Ok(())
     }
 }
