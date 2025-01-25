@@ -127,11 +127,12 @@ impl Path {
 pub struct Simulation {
      city_list: Vec<City>,
      population: Vec<Path>,
-     best_paths: Vec<Path>,
+     paths: Vec<Path>,
      iterations: usize,
      crossover_rate: f64,
      mutation_rate: f64,
      survival_rate: f64,
+     output_csv: Option<String>,
  }
 
 impl Simulation {
@@ -140,19 +141,21 @@ impl Simulation {
                iterations: usize,
                crossover_rate: f64,
                mutation_rate: f64,
-               survival_rate: f64,) -> Self {
+               survival_rate: f64,
+               output_csv: Option<String>,) -> Self {
 
         let population = Self::initial_population(&city_list, population_size);
-        let best_paths = Vec::with_capacity(population_size);
+        let paths = Vec::with_capacity(population_size);
 
         Simulation {
             city_list,
             population,
-            best_paths,
+            paths,
             iterations,
             crossover_rate,
             mutation_rate,
             survival_rate,
+            output_csv,
         }
     }
 
@@ -178,11 +181,16 @@ impl Simulation {
             self.generate_children();
             let challenger = self.find_fittest();
             if challenger.fitness > fittest.fitness {
-                fittest = challenger;
+                fittest = challenger.clone();
             }
-            self.best_paths.push(fittest.clone());
+            self.paths.push(challenger);
         }
         println!("Champion:\n{:?}", fittest);
+        if let Some(csv_path) = &self.output_csv {
+            if let Err(e) = self.write_best_path_csv(csv_path) {
+                eprintln!("Error writing CSV file: {}", e);
+            }
+        }
     }
 
     fn find_fittest(&self) -> Path {
@@ -238,14 +246,23 @@ impl Simulation {
 
     fn write_best_path_csv(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = File::create(file_path)?;
-        for (iteration, path) in self.best_paths.iter().enumerate() {
-            let path_str = path
-                .order
+        let mut headers = String::from("iteration,fitness");
+        for city in &self.city_list {
+            headers.push_str(&format!(",{} {}", city.x, city.y));
+        }
+        writeln!(file, "{}", headers)?;
+        for (iteration, path) in self.paths.iter().enumerate() {
+            // Create a mapping from city index to its position in the path
+            let mut city_position = vec![0; self.city_list.len()];
+            for (position, &city_idx) in path.order.iter().enumerate() {
+                city_position[city_idx] = position;
+            }
+            let positions_str = city_position
                 .iter()
-                .map(|&index| index.to_string())
+                .map(|&pos| pos.to_string())
                 .collect::<Vec<String>>()
                 .join(",");
-            writeln!(file, "{},{}", iteration, path_str)?;
+            writeln!(file, "{},{},{}", iteration, path.fitness, positions_str)?;
         }
         Ok(())
     }

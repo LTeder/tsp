@@ -2,6 +2,7 @@ extern crate clap;
 
 mod tsp;
 mod helper;
+mod gui;
 
 use clap::{Parser, Subcommand};
 use tsp::Simulation;
@@ -15,8 +16,8 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Commands {
-    TSP {
-        #[arg(short = 'f', long)]
+        TSP {
+        #[arg(short = 'f', long, default_value = "data/square.txt")]
         points_filename: String,
 
         #[arg(short, long, default_value_t = 100)]
@@ -32,7 +33,10 @@ enum Commands {
         mutation_rate: f64,
 
         #[arg(short, long, default_value_t = 0.5)]
-        survival_rate: f64
+        survival_rate: f64,
+
+        #[arg(short = 'o', long)]
+        output_csv: Option<String>,
     },
     Render {
         #[arg(short, long)]
@@ -44,7 +48,7 @@ fn main() {
     let args = Args::parse();
     match &args.command {
         Some(Commands::TSP{points_filename, iterations, population_size,
-                           crossover_rate, mutation_rate, survival_rate}) => {
+                           crossover_rate, mutation_rate, survival_rate, output_csv}) => {
 
             let mut cities = Vec::new();
             match helper::read_points_from_file(&points_filename) {
@@ -62,15 +66,18 @@ fn main() {
                 *crossover_rate,
                 *mutation_rate,
                 *survival_rate,
+                output_csv.clone()
             );
             sim.run();
         }
         Some(Commands::Render{input}) => {
-            // Handle render command
-            const FPS: u32 = 20;
+            // Initialize and run the GUI
+            if let Err(e) = gui::run_gui(input.to_string()) {
+                eprintln!("Error running GUI: {}", e);
+            }
         }
         None => {
-            // Handle no command provided
+            println!("Please specify a command. Use --help for more information.");
         }
     }
 }

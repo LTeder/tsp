@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 
-use tsp::City;
+use crate::tsp::City;
 
 pub fn read_points_from_file(filename: &str) -> io::Result<Vec<City>> {
     let file = File::open(filename)?;

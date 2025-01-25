@@ -1,31 +1,27 @@
-extern crate piston_window;
-extern crate plotters_piston;
+use piston_window::*;
+use plotters::prelude::*;
+use crate::tsp::City;
+use crate::helper;
 
-use piston_window::{EventLoop, PistonWindow, WindowSettings};
-use plotters_piston::draw_piston_window;
+pub fn run_gui(input_file: String) -> Result<(), Box<dyn std::error::Error>> {
+    let cities = helper::read_points_from_file(&input_file)?;
 
-fn plot_champion_path(&self, path: &Path, window: &mut Window<()>)
-        -> Result<(), Box<dyn std::error::Error>> {
-    window.draw_2d(|c, g, _| {
-        let (x_min, x_max) = self.city_list.iter().map(|c| c.x).minmax().into_option().unwrap();
-        let (y_min, y_max) = self.city_list.iter().map(|c| c.y).minmax().into_option().unwrap();
+    // Create a Piston window
+    let mut window: PistonWindow = WindowSettings::new("TSP Visualization", [800, 600])
+        .exit_on_esc(true)
+        .build()?;
 
-        let mut chart = ChartBuilder::on(&c.draw_state, g)
-            .caption("Traveling Salesman Problem", ("sans-serif", 50).into_font())
-            .margin(5)
-            .x_label_area_size(30)
-            .y_label_area_size(30)
-            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+    while let Some(event) = window.next() {
+        if let Some(_) = event.render_args() {
+            // Plot the champion path
+            plot_champion_path(&mut window);
+        }
+    }
 
-        chart.configure_mesh().draw()?;
+    Ok(())
+}
 
-        let path_points: Vec<(f64, f64)> = path.order.iter().map(|&index| {
-            let city = &self.city_list[index];
-            (city.x, city.y)
-        }).collect();
+fn plot_champion_path(window: &mut PistonWindow) {
+    //current_path: &Vec<City>, best_path: &Vec<City>, 
 
-        chart.draw_series(LineSeries::new(path_points.into_iter().cycle().take(path.order.len() + 1), &RED))?;
-
-        Ok(())
-    });
 }
