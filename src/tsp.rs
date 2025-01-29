@@ -4,9 +4,9 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Write;
 
-use self::rand::{Rng, thread_rng};
+use self::rand::{Rng, rng};
 use self::rand::seq::SliceRandom;
-use self::rand::distributions::{Distribution, Uniform};
+use self::rand::distr::{Distribution, Uniform};
 
 pub struct City {
     pub x: f64,
@@ -32,8 +32,8 @@ impl Path {
     }
     
     pub fn breed(&self, other: &Path, city_list: &Vec<City>) -> Path {
-        let mut rng = thread_rng();
-        let crossover_type = Uniform::new(0, 3).sample(&mut rng);
+        let mut rng = rng();
+        let crossover_type = rng.random_range(0..3);
         let order = match crossover_type {
             0 => Path::single_point_crossover(&self.order, &other.order),
             1 => Path::uniform_order_crossover(&self.order, &other.order),
@@ -44,8 +44,8 @@ impl Path {
     }
     
     fn single_point_crossover(mother: &Vec<usize>, father: &Vec<usize>) -> Vec<usize> {
-        let mut rng = thread_rng();
-        let crossover_point = Uniform::new(0, mother.len()).sample(&mut rng);
+        let mut rng = rng();
+        let crossover_point = rng.random_range(0..mother.len());
         let mother_dna = &mother[0..crossover_point];
         let father_dna: Vec<usize> = father.iter().filter_map(|d| {
             if !mother_dna.contains(d) {
@@ -59,7 +59,7 @@ impl Path {
     }
 
     fn uniform_order_crossover(mother: &Vec<usize>, father: &Vec<usize>) -> Vec<usize> {
-        let mut rng = thread_rng();
+        let mut rng = rng();
         let mut child: Vec<usize> = vec![0; mother.len()];
         let mut positions: Vec<usize> = (0..mother.len()).collect();
         positions.shuffle(&mut rng);
@@ -85,9 +85,9 @@ impl Path {
     }
 
     fn partially_mapped_crossover(mother: &Vec<usize>, father: &Vec<usize>) -> Vec<usize> {
-        let mut rng = thread_rng();
-        let crossover_point1 = Uniform::new(0, mother.len()).sample(&mut rng);
-        let crossover_point2 = Uniform::new(0, mother.len()).sample(&mut rng);
+        let mut rng = rng();
+        let crossover_point1 = rng.random_range(0..mother.len());
+        let crossover_point2 = rng.random_range(0..mother.len());
         let (start, end) = if crossover_point1 < crossover_point2 {
             (crossover_point1, crossover_point2)
         } else {
@@ -116,9 +116,9 @@ impl Path {
     }
 
     pub fn mutate(&mut self, city_list: &Vec<City>) {
-      let mut rng = thread_rng();
-      let point_one = Uniform::new(0, self.order.len()).sample(&mut rng);
-      let point_two = Uniform::new(0, self.order.len()).sample(&mut rng);
+      let mut rng = rng();
+      let point_one = rng.random_range(0..self.order.len());
+      let point_two = rng.random_range(0..self.order.len());
       self.order.swap(point_one, point_two);
       self.fitness = Path::calculate_fitness(&self.order, &city_list);
     }
@@ -161,7 +161,7 @@ impl Simulation {
 
     fn initial_population(city_list: &Vec<City>, population_size: usize) -> Vec<Path> {
         let base_list: Vec<usize> = (0..city_list.len()).collect();
-        let mut rng = thread_rng();
+        let mut rng = rng();
         let mut population: Vec<Path> = Vec::new();
     
         for _ in 0..population_size {
@@ -216,8 +216,8 @@ impl Simulation {
 
         let mut offspring = Vec::new();
 
-        let mut rng = thread_rng();
-        let pcnt_range = Uniform::new(0, breeding_population.len());
+        let mut rng = rng();
+        let pcnt_range = Uniform::new(0, breeding_population.len()).unwrap();
         for i in 0..self.population.len() - surviving_parent_count - 2 {
             let rs = pcnt_range.sample(&mut rng);
             offspring.push(
@@ -237,7 +237,7 @@ impl Simulation {
         assert!(next_generation.len() == self.population.len());
 
         for p in 0..next_generation.len() {
-            if thread_rng().gen_bool(self.mutation_rate) {
+            if rng.random_bool(self.mutation_rate) {
                 next_generation[p].mutate(&self.city_list);
             }
         }

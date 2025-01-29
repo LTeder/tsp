@@ -7,10 +7,10 @@ description = "Genetic program to solve the travelling salesperson problem"
 
 [dependencies]
 clap = { version = "4.3", features = ["derive"] }
-piston_window = "0.131"
 plotters = "0.3"
 plotters-piston = "0.3"
-rand = "0.8"
+piston_window = "0.132"
+rand = "0.9"
 
 [profile.dev]
-opt-level = 2
+opt-level = 0
