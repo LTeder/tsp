@@ -1,13 +1,9 @@
-extern crate rand;
-
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::Write;
+use rand::{Rng, rng};
+use rand::seq::SliceRandom;
+use rand::distr::{Distribution, Uniform};
 
-use self::rand::{Rng, rng};
-use self::rand::seq::SliceRandom;
-use self::rand::distr::{Distribution, Uniform};
-
+#[derive(Debug)]
 pub struct City {
     pub x: f64,
     pub y: f64,
@@ -245,25 +241,31 @@ impl Simulation {
     }
 
     fn write_best_path_csv(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let mut file = File::create(file_path)?;
-        let mut headers = String::from("iteration,fitness");
+        let file = std::fs::File::create(file_path)?;
+        let mut wtr = csv::Writer::from_writer(file);
+
+        // Write headers
+        let mut headers = vec!["iteration".to_string(), "fitness".to_string()];
         for city in &self.city_list {
-            headers.push_str(&format!(",{} {}", city.x, city.y));
+            headers.push(format!("{} {}", city.x, city.y));
         }
-        writeln!(file, "{}", headers)?;
+        wtr.write_record(&headers)?;
+
+        // Write records
         for (iteration, path) in self.paths.iter().enumerate() {
             // Create a mapping from city index to its position in the path
             let mut city_position = vec![0; self.city_list.len()];
             for (position, &city_idx) in path.order.iter().enumerate() {
                 city_position[city_idx] = position;
             }
-            let positions_str = city_position
-                .iter()
-                .map(|&pos| pos.to_string())
-                .collect::<Vec<String>>()
-                .join(",");
-            writeln!(file, "{},{},{}", iteration, path.fitness, positions_str)?;
+            let record = vec![iteration.to_string(), path.fitness.to_string()]
+                .into_iter()
+                .chain(city_position.iter().map(|&pos| pos.to_string()))
+                .collect::<Vec<String>>();
+            wtr.write_record(&record)?;
         }
+
+        wtr.flush()?;
         Ok(())
     }
 }

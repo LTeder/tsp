@@ -71,8 +71,7 @@ fn main() {
             sim.run();
         }
         Some(Commands::Render{input}) => {
-            // Initialize and run the GUI
-            if let Err(e) = gui::run_gui(input.to_string()) {
+            if let Err(e) = gui::run_gui(input.clone()) {
                 eprintln!("Error running GUI: {}", e);
             }
         }
