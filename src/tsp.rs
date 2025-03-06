@@ -1,7 +1,7 @@
-use std::collections::{HashMap, HashSet};
-use rand::{Rng, rng};
-use rand::seq::SliceRandom;
 use rand::distr::{Distribution, Uniform};
+use rand::seq::SliceRandom;
+use rand::{rng, Rng};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct City {
@@ -12,7 +12,7 @@ pub struct City {
 #[derive(Clone, Debug)]
 pub struct Path {
     fitness: f64,
-    order: Vec<usize>
+    order: Vec<usize>,
 }
 
 impl Path {
@@ -26,7 +26,7 @@ impl Path {
         }
         1.0 / cost
     }
-    
+
     pub fn breed(&self, other: &Path, city_list: &Vec<City>) -> Path {
         let mut rng = rng();
         let crossover_type = rng.random_range(0..3);
@@ -38,17 +38,20 @@ impl Path {
         let fitness = Path::calculate_fitness(&order, city_list);
         Path { fitness, order }
     }
-    
+
     fn single_point_crossover(mother: &Vec<usize>, father: &Vec<usize>) -> Vec<usize> {
         let mut rng = rng();
         let crossover_point = rng.random_range(0..mother.len());
         let mother_dna = &mother[0..crossover_point];
-        let father_dna: Vec<usize> = father.iter().filter_map(|d| {
-            if !mother_dna.contains(d) {
-                return Some(*d)
-            }
-            None
-        }).collect();
+        let father_dna: Vec<usize> = father
+            .iter()
+            .filter_map(|d| {
+                if !mother_dna.contains(d) {
+                    return Some(*d);
+                }
+                None
+            })
+            .collect();
         let mut child = mother_dna.to_vec();
         child.extend(father_dna);
         child
@@ -89,17 +92,17 @@ impl Path {
         } else {
             (crossover_point2, crossover_point1)
         };
-    
+
         let mut child: Vec<usize> = vec![0; mother.len()];
         let mut gene_mapping: HashMap<usize, usize> = HashMap::new();
         let mut gene_set: HashSet<usize> = HashSet::new();
-    
+
         for i in start..end {
             child[i] = mother[i];
             gene_mapping.insert(mother[i], father[i]);
             gene_set.insert(mother[i]);
         }
-    
+
         for i in (0..start).chain(end..mother.len()) {
             let mut gene = father[i];
             while gene_set.contains(&gene) {
@@ -112,34 +115,35 @@ impl Path {
     }
 
     pub fn mutate(&mut self, city_list: &Vec<City>) {
-      let mut rng = rng();
-      let point_one = rng.random_range(0..self.order.len());
-      let point_two = rng.random_range(0..self.order.len());
-      self.order.swap(point_one, point_two);
-      self.fitness = Path::calculate_fitness(&self.order, &city_list);
+        let mut rng = rng();
+        let point_one = rng.random_range(0..self.order.len());
+        let point_two = rng.random_range(0..self.order.len());
+        self.order.swap(point_one, point_two);
+        self.fitness = Path::calculate_fitness(&self.order, &city_list);
     }
 }
 
 pub struct Simulation {
-     city_list: Vec<City>,
-     population: Vec<Path>,
-     paths: Vec<Path>,
-     iterations: usize,
-     crossover_rate: f64,
-     mutation_rate: f64,
-     survival_rate: f64,
-     output_csv: Option<String>,
- }
+    city_list: Vec<City>,
+    population: Vec<Path>,
+    paths: Vec<Path>,
+    iterations: usize,
+    crossover_rate: f64,
+    mutation_rate: f64,
+    survival_rate: f64,
+    output_csv: Option<String>,
+}
 
 impl Simulation {
-    pub fn new(city_list: Vec<City>,
-               population_size: usize,
-               iterations: usize,
-               crossover_rate: f64,
-               mutation_rate: f64,
-               survival_rate: f64,
-               output_csv: Option<String>,) -> Self {
-
+    pub fn new(
+        city_list: Vec<City>,
+        population_size: usize,
+        iterations: usize,
+        crossover_rate: f64,
+        mutation_rate: f64,
+        survival_rate: f64,
+        output_csv: Option<String>,
+    ) -> Self {
         let population = Self::initial_population(&city_list, population_size);
         let paths = Vec::with_capacity(population_size);
 
@@ -159,17 +163,17 @@ impl Simulation {
         let base_list: Vec<usize> = (0..city_list.len()).collect();
         let mut rng = rng();
         let mut population: Vec<Path> = Vec::new();
-    
+
         for _ in 0..population_size {
             let mut p = base_list.clone();
             p.shuffle(&mut rng);
             let fitness = Path::calculate_fitness(&p, city_list);
-    
+
             population.push(Path { fitness, order: p });
         }
         population
     }
-    
+
     pub fn run(&mut self) -> () {
         let mut fittest = self.find_fittest();
         println!("Starting {} iterations...", self.iterations);
@@ -202,7 +206,8 @@ impl Simulation {
     }
 
     fn generate_children(&mut self) {
-        self.population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+        self.population
+            .sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
 
         let breeding_count = (self.population.len() as f64 * self.crossover_rate) as usize;
         let surviving_parent_count = (breeding_count as f64 * self.survival_rate) as usize;
@@ -217,10 +222,8 @@ impl Simulation {
         for i in 0..self.population.len() - surviving_parent_count - 2 {
             let rs = pcnt_range.sample(&mut rng);
             offspring.push(
-                breeding_population[i % breeding_population.len()].breed(
-                    &breeding_population[rs],
-                    &self.city_list
-                )
+                breeding_population[i % breeding_population.len()]
+                    .breed(&breeding_population[rs], &self.city_list),
             );
         }
 
@@ -228,7 +231,8 @@ impl Simulation {
         next_generation.extend_from_slice(&self.population[0..surviving_parent_count]);
         next_generation.append(&mut offspring);
         // Add a few weak individuals to keep the genetic diversity higher
-        next_generation.extend_from_slice(&self.population[self.population.len() - 2..self.population.len()]);
+        next_generation
+            .extend_from_slice(&self.population[self.population.len() - 2..self.population.len()]);
 
         assert!(next_generation.len() == self.population.len());
 

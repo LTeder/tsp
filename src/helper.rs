@@ -14,12 +14,19 @@ pub fn read_points_from_file(filename: &str) -> io::Result<Vec<City>> {
         let line = line?;
         let parts: Vec<&str> = line.split(',').collect();
         if parts.len() != 2 {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid line format"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid line format",
+            ));
         }
 
-        let x = parts[0].trim().parse::<f64>()
+        let x = parts[0]
+            .trim()
+            .parse::<f64>()
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid number format"))?;
-        let y = parts[1].trim().parse::<f64>()
+        let y = parts[1]
+            .trim()
+            .parse::<f64>()
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid number format"))?;
 
         points.push(City { x, y });
@@ -27,20 +34,32 @@ pub fn read_points_from_file(filename: &str) -> io::Result<Vec<City>> {
     Ok(points)
 }
 
-pub fn parse_output_csv(file_path: &str) -> Result<(Vec<City>, Vec<(usize, f64, Vec<usize>)>), Box<dyn Error>> {
+pub fn parse_output_csv(
+    file_path: &str,
+) -> Result<(Vec<City>, Vec<(usize, f64, Vec<usize>)>), Box<dyn Error>> {
     let file = File::open(file_path)?;
-    let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(file);
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(file);
 
     let headers = rdr.headers()?.clone();
     let mut cities = Vec::new();
 
-    for header in headers.iter().skip(2) { // Skip "iteration" and "fitness"
+    for header in headers.iter().skip(2) {
+        // Skip "iteration" and "fitness"
         let parts: Vec<&str> = header.split_whitespace().collect();
         if parts.len() != 2 {
-            return Err(Box::new(io::Error::new(io::ErrorKind::InvalidData, "Invalid city coordinate format")));
+            return Err(Box::new(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid city coordinate format",
+            )));
         }
-        let x: f64 = parts[0].parse().map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid number format for x"))?;
-        let y: f64 = parts[1].parse().map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid number format for y"))?;
+        let x: f64 = parts[0].parse().map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidData, "Invalid number format for x")
+        })?;
+        let y: f64 = parts[1].parse().map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidData, "Invalid number format for y")
+        })?;
         cities.push(City { x, y });
     }
 

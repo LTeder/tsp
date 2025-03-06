@@ -1,8 +1,8 @@
 extern crate clap;
 
-mod tsp;
-mod helper;
 mod gui;
+mod helper;
+mod tsp;
 
 use clap::{Parser, Subcommand};
 use tsp::Simulation;
@@ -16,7 +16,7 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Commands {
-        TSP {
+    TSP {
         #[arg(short = 'f', long, default_value = "data/square.txt")]
         points_filename: String,
 
@@ -41,23 +41,27 @@ enum Commands {
     Render {
         #[arg(short, long)]
         input: String,
-    }
+    },
 }
 
 fn main() {
     let args = Args::parse();
     match &args.command {
-        Some(Commands::TSP{points_filename, iterations, population_size,
-                           crossover_rate, mutation_rate, survival_rate, output_csv}) => {
-
+        Some(Commands::TSP {
+            points_filename,
+            iterations,
+            population_size,
+            crossover_rate,
+            mutation_rate,
+            survival_rate,
+            output_csv,
+        }) => {
             let mut cities = Vec::new();
             match helper::read_points_from_file(&points_filename) {
-                Ok(points) => {
-                    cities = points
-                }
+                Ok(points) => cities = points,
                 Err(e) => eprintln!("Error reading file: {}", e),
             }
-        
+
             // Run simulation
             let mut sim = Simulation::new(
                 cities,
@@ -66,11 +70,11 @@ fn main() {
                 *crossover_rate,
                 *mutation_rate,
                 *survival_rate,
-                output_csv.clone()
+                output_csv.clone(),
             );
             sim.run();
         }
-        Some(Commands::Render{input}) => {
+        Some(Commands::Render { input }) => {
             if let Err(e) = gui::run_gui(input.clone()) {
                 eprintln!("Error running GUI: {}", e);
             }
